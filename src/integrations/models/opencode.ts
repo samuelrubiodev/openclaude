@@ -946,7 +946,7 @@ export default [
 
     vendorId: 'openai',
     classification: ['chat'],
-    defaultModel: 'minimax-m3',
+    defaultModel: 'opencode-minimax-m3',
     capabilities: {
       supportsVision: false,
       supportsStreaming: true,
@@ -1000,7 +1000,7 @@ export default [
 
     vendorId: 'openai',
     classification: ['chat', 'reasoning'],
-    defaultModel: 'qwen3.7-max',
+    defaultModel: 'opencode-qwen3.7-max',
     capabilities: {
       supportsVision: false,
       supportsStreaming: true,
@@ -1018,7 +1018,7 @@ export default [
 
     vendorId: 'openai',
     classification: ['chat', 'reasoning'],
-    defaultModel: 'qwen3.7-plus',
+    defaultModel: 'opencode-qwen3.7-plus',
     capabilities: {
       supportsVision: false,
       supportsStreaming: true,

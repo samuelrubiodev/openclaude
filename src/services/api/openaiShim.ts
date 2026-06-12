@@ -2828,9 +2828,9 @@ class OpenAIShimMessages {
     } catch { /* malformed URL — not Bankr */ }
 
     let isOpenCode = false
-    const isAnthropicTransport = effectiveTransport === 'anthropic_messages';
+    const isAnthropicTransport = effectiveTransport === 'anthropic_messages'
     try {
-      isOpenCode = request.baseUrl.includes('opencode.ai')
+      isOpenCode = new URL(request.baseUrl).hostname.endsWith('opencode.ai')
     } catch { /* malformed URL — not OpenCode */ }
 
     if (authValue) {
