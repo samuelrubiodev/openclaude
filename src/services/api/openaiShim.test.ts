@@ -6587,3 +6587,61 @@ test('DeepSeek: redacted_thinking block with non-empty data propagates data into
     'encrypted_chain_of_thought_payload_v1',
   )
 })
+
+test('OpenCode (Anthropic route) sends x-api-key', async () => {
+  ensureIntegrationsLoaded()
+  process.env.CLAUDE_CODE_USE_OPENAI = '1'
+  process.env.OPENAI_BASE_URL = 'https://opencode.ai/zen/go/v1'
+  process.env.OPENAI_MODEL = 'opencode-go-qwen3.7-max'
+  process.env.OPENAI_API_KEY = 'test-anthropic-key'
+  
+  const captured = await captureChatCompletionRequest('opencode-go-qwen3.7-max')
+  
+  let capturedHeaders: Record<string, string> = {}
+  globalThis.fetch = (async (_input, init) => {
+    capturedHeaders = init?.headers as Record<string, string>
+    return new Response(JSON.stringify({ id: 'test', choices: [] }), { 
+      status: 200, 
+      headers: { 'content-type': 'application/json' } 
+    })
+  }) as unknown as FetchType
+
+  const client = createOpenAIShimClient({}) as OpenAIShimClient
+  await client.beta.messages.create({
+    model: 'opencode-go-qwen3.7-max',
+    messages: [{ role: 'user', content: 'hi' }],
+    max_tokens: 64,
+    stream: false,
+  }).catch(() => {})
+
+  expect(capturedHeaders['x-api-key']).toBe('test-anthropic-key')
+  expect(capturedHeaders['Authorization']).toBeUndefined()
+})
+
+test('OpenCode (Standard route) sends Bearer auth', async () => {
+  ensureIntegrationsLoaded()
+  process.env.CLAUDE_CODE_USE_OPENAI = '1'
+  process.env.OPENAI_BASE_URL = 'https://opencode.ai/zen/go/v1'
+  process.env.OPENAI_MODEL = 'opencode-go-glm-5.1'
+  process.env.OPENAI_API_KEY = 'test-openai-key'
+
+  let capturedHeaders: Record<string, string> = {}
+  globalThis.fetch = (async (_input, init) => {
+    capturedHeaders = init?.headers as Record<string, string>
+    return new Response(JSON.stringify({ id: 'test', choices: [] }), { 
+      status: 200, 
+      headers: { 'content-type': 'application/json' } 
+    })
+  }) as unknown as FetchType
+
+  const client = createOpenAIShimClient({}) as OpenAIShimClient
+  await client.beta.messages.create({
+    model: 'opencode-go-glm-5.1',
+    messages: [{ role: 'user', content: 'hi' }],
+    max_tokens: 64,
+    stream: false,
+  }).catch(() => {})
+
+  expect(capturedHeaders['Authorization']).toBe('Bearer test-openai-key')
+  expect(capturedHeaders['x-api-key']).toBeUndefined()
+})

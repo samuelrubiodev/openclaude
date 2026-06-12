@@ -292,6 +292,17 @@ describe('OpenCode model catalog', () => {
     expect(models.length).toBe(15)
   })
 
+  test('go qwen3.7 models resolve with endpointPath: /messages', () => {
+    const models = getCatalogEntriesForRoute('opencode-go')
+    const qwenMax = models.find(m => m.id === 'opencode-go-qwen3.7-max')
+    const qwenPlus = models.find(m => m.id === 'opencode-go-qwen3.7-plus')
+    
+    expect(qwenMax).toBeDefined()
+    expect(qwenPlus).toBeDefined()
+    expect(qwenMax?.transportOverrides?.openaiShim?.endpointPath).toBe('/messages')
+    expect(qwenPlus?.transportOverrides?.openaiShim?.endpointPath).toBe('/messages')
+  })
+
   test('all zen gpt models have modelDescriptorId', () => {
     const models = getCatalogEntriesForRoute('opencode')
     const gptModels = models.filter(m => m.apiName.startsWith('gpt-'))

@@ -2828,10 +2828,17 @@ class OpenAIShimMessages {
     } catch { /* malformed URL — not Bankr */ }
 
     let isOpenCode = false
-    const isAnthropicTransport = effectiveTransport === 'anthropic_messages'
+    let isAnthropicTransport = effectiveTransport === 'anthropic_messages'
     try {
-      isOpenCode = new URL(request.baseUrl).hostname.endsWith('opencode.ai')
-    } catch { /* malformed URL — not OpenCode */ }
+      const url = new URL(request.baseUrl)
+      isOpenCode = url.hostname.endsWith('opencode.ai')
+      if (isOpenCode && !isAnthropicTransport) {
+        const modelName = request.resolvedModel || '';
+        if (modelName.includes('qwen') || shimConfig?.endpointPath === '/messages') {
+            isAnthropicTransport = true;
+        }
+      }
+    } catch { /* malformed URL */ }
 
     if (authValue) {
       if (hasCustomAuthHeader && customAuthHeader) {
