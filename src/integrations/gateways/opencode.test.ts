@@ -341,20 +341,23 @@ describe('OpenCode Auth and Transport Tests', () => {
     delete process.env.OPENAI_BASE_URL
     delete process.env.OPENAI_MODEL
     delete process.env.OPENAI_API_KEY
-
+    
     globalThis.fetch = originalFetch
   })
 
   test('OpenCode (Anthropic route) sends x-api-key', async () => {
+    process.env.CLAUDE_CODE_USE_OPENAI = '1'
     ensureIntegrationsLoaded()
     
-    process.env.CLAUDE_CODE_USE_OPENAI = '1'
-    process.env.OPENAI_BASE_URL = 'https://opencode.ai/zen/go/v1'
+    process.env.OPENAI_BASE_URL = 'https://opencode.ai'
     process.env.OPENAI_MODEL = 'opencode-go-qwen3.7-max'
     process.env.OPENAI_API_KEY = 'test-anthropic-key'
 
+    let fetchCalled = false
     let capturedHeaders: Headers = new Headers()
+    
     globalThis.fetch = (async (_input, init) => {
+      fetchCalled = true
       capturedHeaders = new Headers(init?.headers as HeadersInit)
       return new Response(JSON.stringify({ id: 'test', choices: [] }), { 
         status: 200, 
@@ -363,29 +366,32 @@ describe('OpenCode Auth and Transport Tests', () => {
     }) as any
 
     const client = createOpenAIShimClient({}) as any
+    
     await client.beta.messages.create({
       model: 'opencode-go-qwen3.7-max',
       messages: [{ role: 'user', content: 'hi' }],
       max_tokens: 64,
       stream: false,
-    }).catch(() => {})
+    })
 
+    expect(fetchCalled).toBe(true)
     expect(capturedHeaders.get('x-api-key')).toBe('test-anthropic-key')
     expect(capturedHeaders.get('authorization')).toBeNull()
-    
-    globalThis.fetch = originalFetch
   })
 
   test('OpenCode (Standard route) sends Bearer auth', async () => {
     ensureIntegrationsLoaded()
     
     process.env.CLAUDE_CODE_USE_OPENAI = '1'
-    process.env.OPENAI_BASE_URL = 'https://opencode.ai/zen/go/v1'
+    process.env.OPENAI_BASE_URL = 'https://opencode.ai'
     process.env.OPENAI_MODEL = 'opencode-go-glm-5.1'
     process.env.OPENAI_API_KEY = 'test-openai-key'
 
+    let fetchCalled = false
     let capturedHeaders: Headers = new Headers()
+    
     globalThis.fetch = (async (_input, init) => {
+      fetchCalled = true
       capturedHeaders = new Headers(init?.headers as HeadersInit)
       return new Response(JSON.stringify({ id: 'test', choices: [] }), { 
         status: 200, 
@@ -394,19 +400,20 @@ describe('OpenCode Auth and Transport Tests', () => {
     }) as any
 
     const client = createOpenAIShimClient({}) as any
+    
     await client.beta.messages.create({
       model: 'opencode-go-glm-5.1',
       messages: [{ role: 'user', content: 'hi' }],
       max_tokens: 64,
       stream: false,
-    }).catch(() => {})
+    })
 
+    expect(fetchCalled).toBe(true)
     expect(capturedHeaders.get('authorization')).toBe('Bearer test-openai-key')
     expect(capturedHeaders.get('x-api-key')).toBeNull()
-    
-    globalThis.fetch = originalFetch
   })
 })
+
 
 
 // ---------------------------------------------------------------------------
