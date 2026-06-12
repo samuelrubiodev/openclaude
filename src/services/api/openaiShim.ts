@@ -2858,14 +2858,13 @@ class OpenAIShimMessages {
         // Azure uses api-key header instead of Bearer token
         headers['api-key'] = authValue
       } else if (isBankr) {
-        // Bankr uses X-API-Key header instead of Bearer token
         headers['X-API-Key'] = authValue
       } else if (isOpenCode && isAnthropicTransport) {
         // OpenCode's Anthropic-compatible endpoint expects the API key in x-api-key header
-          headers['x-api-key'] = authValue;
+        headers['x-api-key'] = authValue
       } else if (isOpenCode) {
         // OpenCode's OpenAI-compatible endpoint expects the API key in Authorization header as a Bearer token
-          headers.Authorization = `Bearer ${authValue}`;
+        headers['Authorization'] = `Bearer ${authValue}`
       } else if (shimConfig.defaultAuthHeader?.name) {
         headers[shimConfig.defaultAuthHeader.name] =
           shimConfig.defaultAuthHeader.scheme === 'bearer'
