@@ -42,6 +42,7 @@ export default defineGateway({
       { id: 'opencode-go-glm-5', apiName: 'glm-5', label: 'GLM 5', modelDescriptorId: 'opencode-go-glm-5' },
       { id: 'opencode-go-kimi-k2.5', apiName: 'kimi-k2.5', label: 'Kimi K2.5', modelDescriptorId: 'opencode-go-kimi-k2.5' },
       { id: 'opencode-go-kimi-k2.6', apiName: 'kimi-k2.6', label: 'Kimi K2.6', modelDescriptorId: 'opencode-go-kimi-k2.6' },
+      { id: 'opencode-go-kimi-k2.7', apiName: 'kimi-k2.7-code', label: 'Kimi K2.7', modelDescriptorId: 'opencode-go-kimi-k2.7-code' },
       { id: 'opencode-go-deepseek-v4-pro', apiName: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', modelDescriptorId: 'opencode-go-deepseek-v4-pro' },
       { id: 'opencode-go-deepseek-v4-flash', apiName: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', modelDescriptorId: 'opencode-go-deepseek-v4-flash' },
       { id: 'opencode-go-mimo-v2.5', apiName: 'mimo-v2.5', label: 'MiMo V2.5', modelDescriptorId: 'opencode-go-mimo-v2.5' },
