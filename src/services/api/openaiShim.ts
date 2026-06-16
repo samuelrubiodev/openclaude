@@ -2651,7 +2651,7 @@ class OpenAIShimMessages {
         } else if (effort === 'high' || effort === 'max') {
           anthropicBody.thinking = {
             type: 'enabled',
-            budgetTokens: effort === 'max' ? 31_999 : 16_000,
+            budget_tokens: effort === 'max' ? 31_999 : 16_000,
           }
         }
       }
