@@ -44,7 +44,7 @@ import {
   type ResolvedProfileRoute,
   type ProviderPreset,
 } from '../integrations/index.js'
-import { isFireworksBaseUrl, isNearaiBaseUrl, resolveEnvOnlyProviderRouteId } from '../integrations/routeMetadata.js'
+import { isFireworksBaseUrl, isNearaiBaseUrl, isXaiBaseUrl, resolveEnvOnlyProviderRouteId } from '../integrations/routeMetadata.js'
 import { logForDebugging } from './debug.js'
 import {
   sanitizeProfileCustomHeaders,
@@ -80,9 +80,19 @@ type ProfileCompatibilityMode =
   | 'gemini'
   | 'mistral'
   | 'github'
+  | 'github-enterprise'
   | 'bedrock'
   | 'vertex'
   | 'openai'
+
+function isGithubCompatibilityMode(
+  compatibilityMode: ProfileCompatibilityMode,
+): boolean {
+  return (
+    compatibilityMode === 'github' ||
+    compatibilityMode === 'github-enterprise'
+  )
+}
 
 function resolveProfileCompatibility(provider: string): {
   route: ResolvedProfileRoute
@@ -90,7 +100,10 @@ function resolveProfileCompatibility(provider: string): {
 } {
   const route = resolveProfileRoute(provider)
 
-  if (route.gatewayId === 'github') {
+  if (provider === 'github-enterprise' || route.gatewayId === 'github-enterprise') {
+    return { route, compatibilityMode: 'github-enterprise' }
+  }
+  if (provider === 'github' || route.gatewayId === 'github') {
     return { route, compatibilityMode: 'github' }
   }
   if (route.gatewayId === 'bedrock') {
@@ -113,6 +126,43 @@ function resolveProfileCompatibility(provider: string): {
   }
 
   return { route, compatibilityMode: 'openai' }
+}
+
+function deriveGithubEnterpriseUrl(baseUrl: string | undefined): string | undefined {
+  if (!baseUrl?.trim()) return undefined
+  try {
+    const parsed = new URL(baseUrl)
+    if (parsed.origin === 'https://api.githubcopilot.com') {
+      return undefined
+    }
+    return parsed.origin
+  } catch {
+    return undefined
+  }
+}
+
+function buildGithubCompatibleProfileEnv(options: {
+  model: string
+  baseUrl?: string
+  gatewayId?: string
+  apiKey?: string
+}): ProfileEnv {
+  const env = buildGithubProfileEnv({
+    model: options.model,
+    baseUrl: options.baseUrl,
+  })
+
+  if (options.gatewayId === 'github-enterprise') {
+    const enterpriseUrl = deriveGithubEnterpriseUrl(options.baseUrl)
+    if (enterpriseUrl) {
+      env.GITHUB_ENTERPRISE_URL = enterpriseUrl
+    }
+    if (options.apiKey?.trim()) {
+      env.GITHUB_COPILOT_KEY = options.apiKey.trim()
+    }
+  }
+
+  return env
 }
 
 function trimValue(value: string | undefined): string {
@@ -390,6 +440,8 @@ function hasCompleteProviderSelection(
   }
   if (processEnv.CLAUDE_CODE_USE_GITHUB !== undefined) {
     return (
+      trimOrUndefined(processEnv.GITHUB_ENTERPRISE_URL) !== undefined ||
+      trimOrUndefined(processEnv.GITHUB_COPILOT_KEY) !== undefined ||
       trimOrUndefined(processEnv.GITHUB_TOKEN) !== undefined ||
       trimOrUndefined(processEnv.GH_TOKEN) !== undefined ||
       trimOrUndefined(processEnv.OPENAI_MODEL) !== undefined
@@ -414,7 +466,8 @@ function hasConflictingProviderFlagsForProfile(
     (compatibilityMode !== 'openai' && processEnv.CLAUDE_CODE_USE_OPENAI !== undefined) ||
     (compatibilityMode !== 'gemini' && processEnv.CLAUDE_CODE_USE_GEMINI !== undefined) ||
     (compatibilityMode !== 'mistral' && processEnv.CLAUDE_CODE_USE_MISTRAL !== undefined) ||
-    (compatibilityMode !== 'github' && processEnv.CLAUDE_CODE_USE_GITHUB !== undefined) ||
+    (!isGithubCompatibilityMode(compatibilityMode) &&
+      processEnv.CLAUDE_CODE_USE_GITHUB !== undefined) ||
     (compatibilityMode !== 'bedrock' && processEnv.CLAUDE_CODE_USE_BEDROCK !== undefined) ||
     (compatibilityMode !== 'vertex' && processEnv.CLAUDE_CODE_USE_VERTEX !== undefined) ||
     processEnv.CLAUDE_CODE_USE_FOUNDRY !== undefined
@@ -488,7 +541,11 @@ function isProcessEnvAlignedWithProfile(
     )
   }
 
-  if (compatibilityMode === 'github') {
+  if (isGithubCompatibilityMode(compatibilityMode)) {
+    const expectedGheUrl =
+      profile.provider === 'github-enterprise'
+        ? deriveGithubEnterpriseUrl(profile.baseUrl)
+        : undefined
     return (
       processEnv.CLAUDE_CODE_USE_GITHUB !== undefined &&
       processEnv.CLAUDE_CODE_USE_OPENAI === undefined &&
@@ -498,7 +555,11 @@ function isProcessEnvAlignedWithProfile(
       processEnv.CLAUDE_CODE_USE_VERTEX === undefined &&
       processEnv.CLAUDE_CODE_USE_FOUNDRY === undefined &&
       sameOptionalEnvValue(processEnv.OPENAI_BASE_URL, profile.baseUrl) &&
-      sameOptionalEnvValue(processEnv.OPENAI_MODEL, getPrimaryModel(profile.model))
+      sameOptionalEnvValue(processEnv.OPENAI_MODEL, getPrimaryModel(profile.model)) &&
+      sameOptionalEnvValue(processEnv.GITHUB_ENTERPRISE_URL, expectedGheUrl) &&
+      (profile.provider !== 'github-enterprise' ||
+        !includeApiKey ||
+        sameOptionalEnvValue(processEnv.GITHUB_COPILOT_KEY, profile.apiKey))
     )
   }
 
@@ -560,7 +621,7 @@ function isProcessEnvAlignedWithProfile(
       ? !includeApiKey ||
         sameOptionalEnvValue(processEnv.BNKR_API_KEY, profile.apiKey)
       : true) &&
-    (profile.baseUrl?.toLowerCase().includes('x.ai')
+    (isXaiBaseUrl(profile.baseUrl)
       ? !includeApiKey ||
         sameOptionalEnvValue(processEnv.XAI_API_KEY, profile.apiKey)
       : true) &&
@@ -650,10 +711,15 @@ export function applyProviderProfileToProcessEnv(profile: ProviderProfile): void
       GEMINI_MODEL: primaryModel,
       ...(profile.apiKey ? { GEMINI_API_KEY: profile.apiKey } : {}),
     }
-  } else if (compatibilityMode === 'github') {
-    profileEnv = buildGithubProfileEnv({
+  } else if (isGithubCompatibilityMode(compatibilityMode)) {
+    profileEnv = buildGithubCompatibleProfileEnv({
       model: primaryModel,
       baseUrl: profile.baseUrl,
+      gatewayId:
+        profile.provider === 'github-enterprise'
+          ? 'github-enterprise'
+          : route.gatewayId,
+      apiKey: profile.apiKey,
     })
   } else if (compatibilityMode === 'bedrock') {
     profileEnv = buildBedrockProfileEnv({
@@ -710,7 +776,7 @@ export function applyProviderProfileToProcessEnv(profile: ProviderProfile): void
       if (route.routeId === 'bankr' || profile.baseUrl.toLowerCase().includes('bankr')) {
         openAIProfileEnv.BNKR_API_KEY = profile.apiKey
       }
-      if (route.routeId === 'xai' || profile.baseUrl.toLowerCase().includes('x.ai')) {
+      if (route.routeId === 'xai' || isXaiBaseUrl(profile.baseUrl)) {
         openAIProfileEnv.XAI_API_KEY = profile.apiKey
       }
       if (route.routeId === 'venice' || profile.baseUrl.toLowerCase().includes('api.venice.ai')) {
@@ -1010,7 +1076,7 @@ function buildOpenAICompatibleStartupEnv(
     if (activeProfile.baseUrl?.toLowerCase().includes('bankr')) {
       env.BNKR_API_KEY = activeProfile.apiKey
     }
-    if (activeProfile.baseUrl?.toLowerCase().includes('x.ai')) {
+    if (isXaiBaseUrl(activeProfile.baseUrl)) {
       env.XAI_API_KEY = activeProfile.apiKey
     }
     if (activeProfile.baseUrl?.toLowerCase().includes('api.venice.ai')) {
@@ -1095,13 +1161,26 @@ function buildStartupProfileFromActiveProfile(
         : null
     }
     case 'github':
+    case 'github-enterprise': {
       return {
-        profile: 'github',
-        env: applySupportedProfileCustomHeaders(activeProfile, buildGithubProfileEnv({
-          model: getPrimaryModel(activeProfile.model),
-          baseUrl: activeProfile.baseUrl,
-        })),
+        profile:
+          activeProfile.provider === 'github-enterprise'
+            ? 'github-enterprise'
+            : 'github',
+        env: applySupportedProfileCustomHeaders(
+          activeProfile,
+          buildGithubCompatibleProfileEnv({
+            model: getPrimaryModel(activeProfile.model),
+            baseUrl: activeProfile.baseUrl,
+            apiKey: activeProfile.apiKey,
+            gatewayId:
+              activeProfile.provider === 'github-enterprise'
+                ? 'github-enterprise'
+                : 'github',
+          }),
+        ),
       }
+    }
     case 'bedrock':
       return {
         profile: 'bedrock',
