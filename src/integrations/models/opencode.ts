@@ -863,7 +863,7 @@ export default [
       supportsReasoning: false,
       supportsPreciseTokenCount: false,
     },
-    contextWindow: 131_072,
+    contextWindow: 262_144,
     maxOutputTokens: 32_768,
   }),
   defineModel({
@@ -881,7 +881,7 @@ export default [
       supportsReasoning: true,
       supportsPreciseTokenCount: false,
     },
-    contextWindow: 131_072,
+    contextWindow: 262_144,
     maxOutputTokens: 32_768,
   }),
   defineModel({
@@ -953,7 +953,7 @@ export default [
       supportsReasoning: false,
       supportsPreciseTokenCount: false,
     },
-    contextWindow: 131_072,
+    contextWindow: 1_048_576,
     maxOutputTokens: 32_768,
   }),
 
@@ -973,7 +973,7 @@ export default [
       supportsReasoning: true,
       supportsPreciseTokenCount: false,
     },
-    contextWindow: 131_072,
+    contextWindow: 512_000,
     maxOutputTokens: 32_768,
   }),
   defineModel({
