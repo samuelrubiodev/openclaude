@@ -794,6 +794,24 @@ export default [
   // ============================================================
 
   // --- OpenAI-compatible (chat/completions endpoint) ---
+    defineModel({
+    id: 'opencode-go-glm-5',
+    label: 'GLM 5',
+
+    vendorId: 'openai',
+    classification: ['chat'],
+    defaultModel: 'opencode-go-glm-5',
+    capabilities: {
+      supportsVision: false,
+      supportsStreaming: true,
+      supportsFunctionCalling: true,
+      supportsJsonMode: true,
+      supportsReasoning: false,
+      supportsPreciseTokenCount: false,
+    },
+    contextWindow: 131_072,
+    maxOutputTokens: 32_768,
+  }),
   defineModel({
     id: 'opencode-go-glm-5.1',
     label: 'GLM 5.1',
@@ -813,21 +831,21 @@ export default [
     maxOutputTokens: 32_768,
   }),
   defineModel({
-    id: 'opencode-go-glm-5',
-    label: 'GLM 5',
+    id: 'opencode-go-glm-5.2',
+    label: 'GLM 5.2',
 
     vendorId: 'openai',
     classification: ['chat'],
-    defaultModel: 'opencode-go-glm-5',
+    defaultModel: 'opencode-go-glm-5.2',
     capabilities: {
       supportsVision: false,
       supportsStreaming: true,
       supportsFunctionCalling: true,
       supportsJsonMode: true,
-      supportsReasoning: false,
+      supportsReasoning: true,
       supportsPreciseTokenCount: false,
     },
-    contextWindow: 131_072,
+    contextWindow: 1_000_000,
     maxOutputTokens: 32_768,
   }),
   defineModel({

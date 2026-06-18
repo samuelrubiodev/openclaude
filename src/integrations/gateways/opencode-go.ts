@@ -38,8 +38,9 @@ export default defineGateway({
     source: 'static',
     models: [
       // OpenAI-compatible — /zen/go/v1/chat/completions
-      { id: 'opencode-go-glm-5.1', apiName: 'glm-5.1', label: 'GLM 5.1', modelDescriptorId: 'opencode-go-glm-5.1' },
       { id: 'opencode-go-glm-5', apiName: 'glm-5', label: 'GLM 5', modelDescriptorId: 'opencode-go-glm-5' },
+      { id: 'opencode-go-glm-5.1', apiName: 'glm-5.1', label: 'GLM 5.1', modelDescriptorId: 'opencode-go-glm-5.1' },
+      { id: 'opencode-go-glm-5.2', apiName: 'glm-5.2', label: 'GLM 5.2', modelDescriptorId: 'opencode-go-glm-5.2' },
       { id: 'opencode-go-kimi-k2.5', apiName: 'kimi-k2.5', label: 'Kimi K2.5', modelDescriptorId: 'opencode-go-kimi-k2.5' },
       { id: 'opencode-go-kimi-k2.6', apiName: 'kimi-k2.6', label: 'Kimi K2.6', modelDescriptorId: 'opencode-go-kimi-k2.6' },
       { id: 'opencode-go-kimi-k2.7', apiName: 'kimi-k2.7-code', label: 'Kimi K2.7', modelDescriptorId: 'opencode-go-kimi-k2.7-code' },
