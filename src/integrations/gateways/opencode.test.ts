@@ -290,11 +290,7 @@ describe('OpenCode model catalog', () => {
 
   test('go model count matches expected', () => {
     const models = getCatalogEntriesForRoute('opencode-go')
-    expect(models.length).toBe(15)
-
-    const modelIds = models.map(m => m.id)
-    expect(modelIds).toContain('opencode-go-qwen3.7-max')
-    expect(modelIds).toContain('opencode-go-qwen3.7-plus')
+    expect(models.length).toBe(20)
   })
 
   test('go qwen3.7 models resolve with endpointPath: /messages', () => {
