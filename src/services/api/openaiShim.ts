@@ -2855,11 +2855,21 @@ class OpenAIShimMessages {
       process.env.OPENAI_API_KEY ??
       xaiOAuthToken ??
       ''
-    const configuredAuthHeaderValue = process.env.OPENAI_AUTH_HEADER_VALUE?.trim()
+    // A catalog-level auth header is part of the selected model's transport
+    // contract. Ignore global custom auth left behind by another route so it
+    // cannot replace that model-specific header or credential.
+    const catalogAuthHeader =
+      runtimeShimContext.catalogEntry?.transportOverrides?.openaiShim
+        ?.defaultAuthHeader
+    const configuredAuthHeaderValue = catalogAuthHeader
+      ? undefined
+      : process.env.OPENAI_AUTH_HEADER_VALUE?.trim()
     if (configuredAuthHeaderValue && /[\r\n]/.test(configuredAuthHeaderValue)) {
       throw new Error('OPENAI_AUTH_HEADER_VALUE must not contain CR/LF characters')
     }
-    const customAuthHeader = process.env.OPENAI_AUTH_HEADER?.trim()
+    const customAuthHeader = catalogAuthHeader
+      ? undefined
+      : process.env.OPENAI_AUTH_HEADER?.trim()
     const hasCustomAuthHeader = Boolean(
       customAuthHeader &&
       /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/.test(customAuthHeader),
@@ -3211,11 +3221,48 @@ class OpenAIShimMessages {
         // stream_options: { include_usage: true } and can be extracted from the stream.
         if (!params.stream) {
           try {
-            const clone = response.clone()
-            const data = await clone.json()
+            const bodyText = await response.text()
+            // Preserve routing metadata that `new Response()` drops to "".
+            // create() reads `response.url` to route between /responses,
+            // /messages, and Gemini conversion paths; losing it makes
+            // descriptor routes (OpenCode /messages, Gemini /models/gemini-*)
+            // fall through to the generic OpenAI converter and return the
+            // wrong message shape. `url` is a read-only getter on the
+            // prototype, so shadow it with an own property.
+            const originalUrl = response.url
+            const originalType = response.type
+            // Recreate the response immediately after reading the body, before
+            // JSON.parse — if parsing fails, downstream code can still read the
+            // body from the fresh Response instead of hitting "Body already used".
+            response = new Response(bodyText, {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers,
+            })
+            if (originalUrl) {
+              try {
+                Object.defineProperty(response, 'url', {
+                  value: originalUrl,
+                  configurable: true,
+                })
+              } catch {
+                /* some runtimes lock the property; routing falls back to transport */
+              }
+            }
+            if (originalType && originalType !== 'basic') {
+              try {
+                Object.defineProperty(response, 'type', {
+                  value: originalType,
+                  configurable: true,
+                })
+              } catch {
+                /* non-fatal: type is not used for response routing */
+              }
+            }
+            const data = JSON.parse(bodyText)
             tokensIn = data.usage?.prompt_tokens ?? 0
             tokensOut = data.usage?.completion_tokens ?? 0
-          } catch { /* ignore */ }
+          } catch { /* ignore — response is already recreated with the body intact */ }
         }
         logApiCallEnd(correlationId, startTime, request.resolvedModel, 'success', tokensIn, tokensOut, false)
         return response
