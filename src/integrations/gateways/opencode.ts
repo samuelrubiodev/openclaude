@@ -99,9 +99,9 @@ export default defineGateway({
       matchDefaultBaseUrl: true,
       matchBaseUrlHosts: ['opencode.ai'],
     },
-    credentialEnvVars: ['OPENCODE_API_KEY', 'OPENAI_API_KEY'],
+    credentialEnvVars: ['OPENCODE_API_KEY', 'OPENAI_API_KEYS', 'OPENAI_API_KEY'],
     missingCredentialMessage:
-      'OPENCODE_API_KEY is required. Get your API key from https://opencode.ai',
+      'OPENCODE_API_KEY or OPENAI_API_KEYS / OPENAI_API_KEY is required. Get your API key from https://opencode.ai',
   },
   catalog: {
     source: 'static',

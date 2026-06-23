@@ -330,6 +330,27 @@ describe('OpenCode model catalog', () => {
       expect(model.modelDescriptorId).toMatch(/^opencode-go-/)
     }
   })
+
+  test('go Anthropic-format models use the messages endpoint with x-api-key auth', () => {
+    const models = getCatalogEntriesForRoute('opencode-go')
+    const messagesModelIds = [
+      'opencode-go-minimax-m3',
+      'opencode-go-minimax-m2.7',
+      'opencode-go-qwen3.7-max',
+      'opencode-go-qwen3.7-plus',
+      'opencode-go-qwen3.6-plus',
+    ]
+    for (const id of messagesModelIds) {
+      const model = models.find(m => m.id === id)
+      expect(model).toBeDefined()
+      expect(model!.transportOverrides?.openaiShim).toMatchObject({
+        endpointPath: '/messages',
+        defaultAuthHeader: {
+          name: 'x-api-key',
+          scheme: 'raw',
+        },
+      })
+    }
 })
 
 
@@ -561,8 +582,8 @@ describe('OpenCode edge cases', () => {
 
     expect(models.get('opencode-qwen3.6-plus')?.contextWindow).toBe(262_144)
     expect(models.get('opencode-deepseek-v4-pro')?.maxOutputTokens).toBe(384_000)
-    expect(models.get('opencode-go-minimax-m2.5')?.maxOutputTokens).toBe(65_536)
-    expect(models.get('opencode-go-hy3-preview')?.contextWindow).toBe(256_000)
+    expect(models.get('opencode-go-minimax-m2.7')?.maxOutputTokens).toBe(131_072)
+    expect(models.get('opencode-go-mimo-v2.5')?.contextWindow).toBe(1_000_000)
   })
 
   test('zen gateway validation message mentions OPENCODE_API_KEY', () => {

@@ -1,4 +1,4 @@
-import { defineCatalog, defineVendor } from '../define.js'
+import { defineCatalog, defineGateway } from '../define.js'
 
 const catalog = defineCatalog({
   source: 'static',
@@ -24,13 +24,12 @@ const catalog = defineCatalog({
   ],
 })
 
-export default defineVendor({
-  id: 'xiaomi-mimo',
-  label: 'Xiaomi MiMo',
-  classification: 'openai-compatible',
-  defaultBaseUrl: 'https://api.xiaomimimo.com/v1',
+export default defineGateway({
+  id: 'xiaomi-mimo-token',
+  label: 'Xiaomi MiMo (Token Plan)',
+  category: 'hosted',
+  defaultBaseUrl: 'https://token-plan-sgp.xiaomimimo.com/v1',
   defaultModel: 'mimo-v2.5-pro',
-  requiredEnvVars: ['MIMO_API_KEY'],
   setup: {
     requiresAuth: true,
     authMode: 'api-key',
@@ -52,10 +51,11 @@ export default defineVendor({
     },
   },
   preset: {
-    id: 'xiaomi-mimo',
-    description: 'Xiaomi MiMo OpenAI-compatible endpoint',
-    label: 'Xiaomi MiMo',
-    name: 'Xiaomi MiMo',
+    id: 'xiaomi-mimo-token',
+    vendorId: 'xiaomi-mimo',
+    description: 'Xiaomi MiMo Token Plan subscription endpoint',
+    label: 'Xiaomi MiMo (Token Plan)',
+    name: 'Xiaomi MiMo (Token Plan)',
     apiKeyEnvVars: ['MIMO_API_KEY'],
     modelEnvVars: ['OPENAI_MODEL'],
     badge: { text: 'Sponsor', color: 'success' },
@@ -64,11 +64,14 @@ export default defineVendor({
     kind: 'credential-env',
     routing: {
       matchDefaultBaseUrl: true,
-      matchBaseUrlHosts: ['api.xiaomimimo.com', 'api.mimo-v2.com'],
+      matchBaseUrlHosts: [
+        'token-plan-sgp.xiaomimimo.com',
+        'token-plan-cn.xiaomimimo.com',
+      ],
     },
-    credentialEnvVars: ['MIMO_API_KEY', 'OPENAI_API_KEYS', 'OPENAI_API_KEY'],
+    credentialEnvVars: ['MIMO_API_KEY', 'OPENAI_API_KEY'],
     missingCredentialMessage:
-      'Xiaomi MiMo auth is required. Set MIMO_API_KEY or OPENAI_API_KEYS / OPENAI_API_KEY.',
+      'Xiaomi MiMo Token Plan auth is required. Set MIMO_API_KEY or OPENAI_API_KEY.',
   },
   catalog,
   usage: { supported: false },
