@@ -226,6 +226,12 @@ function supportsZaiReasoningEffort(model: string | undefined): boolean {
   return normalized === 'glm-5.2'
 }
 
+function normalizeEffortToOpenAI(effort?: string): string | undefined {
+  if (!effort) return undefined;
+  if (effort === 'xhigh') return 'max';
+  return effort;
+}
+
 function normalizeThinkingType(
   value: string | undefined,
 ): 'enabled' | 'disabled' | undefined {
@@ -2473,7 +2479,7 @@ class OpenAIShimMessages {
      // or `?reasoning=<level>` query on the model string). OpenAI, Codex, and
      // most OpenAI-compatible endpoints read it from this top-level field.
     if (request.reasoning) {
-      body.reasoning_effort = request.reasoning.effort
+      body.reasoning_effort = normalizeEffortToOpenAI(request.reasoning.effort);
     }
     // Convert max_tokens to max_completion_tokens for OpenAI API compatibility.
     // Azure OpenAI requires max_completion_tokens and does not accept max_tokens.
